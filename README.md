@@ -15,6 +15,7 @@ Extract news links from a Gmail email, send them to a Cloudflare Worker for summ
    - `OPENAI_API_KEY`: key for the OpenAI Chat Completions API.
    - `SUMMARIZER` (optional): `openai` (default). Extendable later.
    - Local dev: put env in `.dev.vars`; an example is in `.env.example`.
+   - Optional `API_TOKEN`: bearer token required on incoming requests for auth. Set via `wrangler secret put API_TOKEN`.
 3. Deploy the Worker via Wrangler (see “Deploy to Cloudflare” below); ensure it exposes `POST /summaries`.
 4. Update `BACKEND_URL` in `src/client/gmail.js` to your Worker endpoint, then install it directly as a Tampermonkey userscript (no build step).
 
@@ -35,6 +36,7 @@ compatibility_date = "2024-11-17"
 Notes:
 - Wrangler bundles everything under `src/`; you only ship the Worker entrypoint.
 - The Tampermonkey client is separate: install `src/client/gmail.js` directly in Tampermonkey (metadata header kept), set `BACKEND_URL` to the deployed Worker.
+- If `API_TOKEN` is set, requests must include `Authorization: Bearer <API_TOKEN>`. The userscript can set `API_TOKEN` at the top of `src/client/gmail.js` to send this header.
 
 ## Development workflow (TDD-first)
 

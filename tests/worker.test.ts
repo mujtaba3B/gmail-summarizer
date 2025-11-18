@@ -44,6 +44,6 @@ describe("worker.fetch", () => {
     const response = await worker.fetch(request, { OPENAI_API_KEY: "test" });
     expect(response.status).toBe(200);
     const payload = (await response.json()) as any;
-    expect(payload.summaries[0].headline).toContain("Headline for");
+    expect(payload.summaries[0].headline).toBe("Example");
   });
 });

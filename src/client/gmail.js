@@ -16,6 +16,7 @@
   const TEST_MODE_LIMIT = 50; // set >0 to limit articles for credit savings; set 0 to disable limit
   const MAX_ARTICLES = 100; // safety cap
   const DEBUG_FALLBACK_TO_FIRST_LINK = true;
+  const API_TOKEN = ""; // set to match Worker API_TOKEN (Bearer token)
   const READ_MORE_PHRASES = [
     "read more",
     "read now",
@@ -358,7 +359,10 @@
       const started = performance.now();
       const response = await gmFetch(BACKEND_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(API_TOKEN ? { Authorization: `Bearer ${API_TOKEN}` } : {}),
+        },
         data: JSON.stringify({
           links: selected,
           readingTime: state.readingTime,

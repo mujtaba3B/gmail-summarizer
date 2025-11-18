@@ -6,6 +6,7 @@ import { SummaryRequestPayload } from "./types";
 export interface Env {
   OPENAI_API_KEY?: string;
   SUMMARIZER?: string;
+  API_TOKEN?: string;
 }
 
 async function parseRequest(request: Request): Promise<SummaryRequestPayload> {
@@ -76,6 +77,12 @@ export default {
     }
 
     try {
+      if (!authorize(request, env)) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: baseHeaders(),
+        });
+      }
       const payload = await parseRequest(request);
       const adapter = buildSummarizer(env);
       console.log("[worker] received request", {
@@ -121,4 +128,11 @@ function clampNumber(value: any, min: number, max: number): number {
     return Math.min(max, Math.max(min, Math.floor(num)));
   }
   return min;
+}
+
+function authorize(request: Request, env: Env): boolean {
+  if (!env.API_TOKEN) return true; // allow if not set
+  const auth = request.headers.get("authorization") || "";
+  const expected = `Bearer ${env.API_TOKEN}`;
+  return auth === expected;
 }
