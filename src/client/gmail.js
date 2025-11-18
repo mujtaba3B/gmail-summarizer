@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Email News Summarizer
-// @namespace    https://github.com/user/email_reader
+// @namespace    https://github.com/mujtaba3B/gmail-summarizer
 // @version      0.1.0
 // @description  Extract news links from the open email and summarize them via a Cloudflare Worker backend.
 // @match        https://mail.google.com/*

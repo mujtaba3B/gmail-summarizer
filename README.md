@@ -1,6 +1,6 @@
 # Email News Summarizer
 
-Extract news links from a Gmail email, send them to a Cloudflare Worker for summarization, and render concise bullet points in-page via a Tampermonkey userscript. Summarization is adapter-based so different AI APIs can be swapped in; OpenAI is the default.
+Extract news links from a Gmail email, send them to a Cloudflare Worker for summarization, and render concise bullet points in-page via a Tampermonkey userscript. Summarization is adapter-based so different AI APIs can be swapped in; OpenAI is the default. The client sends all detected links; the Worker enforces how many get summarized.
 
 ## Architecture
 
@@ -14,13 +14,14 @@ Extract news links from a Gmail email, send them to a Cloudflare Worker for summ
 2. Configure env (Worker):
    - `OPENAI_API_KEY`: key for the OpenAI Chat Completions API.
    - `SUMMARIZER` (optional): `openai` (default). Extendable later.
+   - Local dev: put env in `.dev.vars`; an example is in `.env.example`.
 3. Deploy the Worker via Wrangler (see “Deploy to Cloudflare” below); ensure it exposes `POST /summaries`.
 4. Update `BACKEND_URL` in `src/client/gmail.js` to your Worker endpoint, then install it directly as a Tampermonkey userscript (no build step).
 
 ## Deploy to Cloudflare (Wrangler)
 
 1) Install Wrangler: `npm install -D wrangler` (once per repo).  
-2) Add `wrangler.toml` in the repo root, e.g.:
+2) `wrangler.toml` is present:
 ```
 name = "email-reader"
 main = "src/worker.ts"
@@ -32,8 +33,8 @@ compatibility_date = "2024-11-17"
 6) Deploy: `npx wrangler deploy`. The resulting URL is your `BACKEND_URL` (append `/summaries`).  
 
 Notes:
-- Wrangler bundles everything under `src/` automatically; you only ship the Worker entrypoint.
-- The Tampermonkey client is separate: transpile/copy `src/client/gmail.ts` to `.user.js` with the metadata header intact, then install it in Tampermonkey and set `BACKEND_URL` to the deployed Worker.
+- Wrangler bundles everything under `src/`; you only ship the Worker entrypoint.
+- The Tampermonkey client is separate: install `src/client/gmail.js` directly in Tampermonkey (metadata header kept), set `BACKEND_URL` to the deployed Worker.
 
 ## Development workflow (TDD-first)
 
@@ -66,8 +67,8 @@ Notes:
 ## Usage (high level)
 
 1. Open an email in Gmail with links.
-2. Click “Summarize links” in the injected panel; pick reading time (`quick`, `default`, `long`).
-3. Backend returns headline + bullet list per link; links remain clickable.
+2. Click the ✍️ icon in the Gmail top bar to open the side panel. Pick reading time (`quick`, `default`, `long`). Press “Summarize”.
+3. Backend returns headline + bullet list per link; links remain clickable. The header shows the count; timing is displayed above results.
 
 ## Extending (new summarizer)
 
@@ -79,6 +80,14 @@ Notes:
 
 - Worker tests mock both the summarizer factory and `fetch` to avoid live calls.
 - Reading-time tests guard the profile mapping. Add more as policies evolve.
+- Run `npm test`. Typecheck: `npm run typecheck`.
+
+## Limits and server behavior
+
+- Client sends all detected links; Worker enforces `articleLimit` and `maxArticles` (passed from the client) to cap OpenAI calls and control spend.
+- Links are deduped and summarized in parallel; response order matches the input order.
+- Headlines prefer the article page `<title>` (cleaned of site suffixes like “| …”) before falling back to model output or URL.
+- Server logs include counts (received/deduped/summaries/skipped/OpenAI calls) and average adapter time per request.
 
 ## Roadmap (suggested)
 
