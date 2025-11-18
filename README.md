@@ -17,7 +17,11 @@ Extract news links from a Gmail email, send them to a Cloudflare Worker for summ
    - Local dev: put env in `.dev.vars`; an example is in `.env.example`.
    - Optional `API_TOKEN`: bearer token required on incoming requests for auth. Set via `wrangler secret put API_TOKEN`.
 3. Deploy the Worker via Wrangler (see “Deploy to Cloudflare” below); ensure it exposes `POST /summaries`.
-4. Update `BACKEND_URL` in `src/client/gmail.js` to your Worker endpoint, then install it directly as a Tampermonkey userscript (no build step).
+4. Configure the userscript (Tampermonkey):
+   - Install `src/client/gmail.js` directly (metadata kept).
+   - In Gmail’s console (with the userscript installed), set values in Tampermonkey storage:
+     - `GM_setValue('BACKEND_URL', 'https://<your-worker>/summaries');`
+     - `GM_setValue('API_TOKEN', '<your-api-token>');` (if you set `API_TOKEN` on the Worker)
 
 ## Deploy to Cloudflare (Wrangler)
 
@@ -30,7 +34,13 @@ compatibility_date = "2024-11-17"
 ```
 3) Authenticate: `npx wrangler login` (or set `CLOUDFLARE_API_TOKEN`).  
 4) Set secrets (at least your OpenAI key): `npx wrangler secret put OPENAI_API_KEY` (and `SUMMARIZER` if you add adapters).  
-5) Local preview (Miniflare): `npx wrangler dev` (POST to `http://127.0.0.1:8787/summaries`).  
+5) Local preview (Miniflare): `npx wrangler dev` (POST to `http://127.0.0.1:8787/summaries`). Example curl:
+```
+curl -X POST http://127.0.0.1:8787/summaries \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <API_TOKEN>" \
+  -d '{"links":["https://www.staffingindustry.com/editorial/healthcare-staffing-report/venture-capital-investments-in-staffing-and-workforce-companies-reach-record-level"],"readingTime":"quick","articleLimit":1,"maxArticles":1}'
+```
 6) Deploy: `npx wrangler deploy`. The resulting URL is your `BACKEND_URL` (append `/summaries`).  
 
 Notes:

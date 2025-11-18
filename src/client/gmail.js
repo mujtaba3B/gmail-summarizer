@@ -5,18 +5,22 @@
 // @description  Extract news links from the open email and summarize them via a Cloudflare Worker backend.
 // @match        https://mail.google.com/*
 // @grant        GM_xmlhttpRequest
+// @grant        GM_getValue
+// @grant        GM_setValue
 // @run-at       document-end
 // ==/UserScript==
 
 // Tampermonkey globals
 /* global GM_xmlhttpRequest */
+/* global GM_getValue */
+/* global GM_setValue */
 
 (function () {
-  const BACKEND_URL = "http://127.0.0.1:8787/summaries";
+  const BACKEND_URL = getOrPrompt("BACKEND_URL", "Enter backend URL (include /summaries)", "");
+  const API_TOKEN = getOrPrompt("API_TOKEN", "Enter API token (or leave blank)", "");
   const TEST_MODE_LIMIT = 50; // set >0 to limit articles for credit savings; set 0 to disable limit
   const MAX_ARTICLES = 100; // safety cap
   const DEBUG_FALLBACK_TO_FIRST_LINK = true;
-  const API_TOKEN = ""; // set to match Worker API_TOKEN (Bearer token)
   const READ_MORE_PHRASES = [
     "read more",
     "read now",
@@ -515,4 +519,18 @@
   observer.observe(document.body, { childList: true, subtree: true });
   window.addEventListener("hashchange", bootstrapIfNeeded);
   bootstrapIfNeeded();
+
+  function getOrPrompt(key, promptText, defaultValue) {
+    try {
+      const existing = typeof GM_getValue === "function" ? GM_getValue(key) : null;
+      if (existing) return existing;
+      const entered = window.prompt(promptText, defaultValue || "");
+      if (entered !== null && typeof GM_setValue === "function") {
+        GM_setValue(key, entered);
+      }
+      return entered || defaultValue;
+    } catch (e) {
+      return defaultValue;
+    }
+  }
 })();
